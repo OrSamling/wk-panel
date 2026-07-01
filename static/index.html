@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WK Panel - 玩客云管理</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif; background:#f0f2f5; color:#1a1a2e; }
+.sidebar { position:fixed; left:0; top:0; bottom:0; width:220px; background:#1e293b; color:#94a3b8; display:flex; flex-direction:column; z-index:50; }
+.sidebar .logo { padding:20px; border-bottom:1px solid #334155; display:flex; align-items:center; gap:10px; }
+.sidebar .logo span { color:#fff; font-size:18px; font-weight:700; }
+.sidebar nav { flex:1; padding:12px; overflow-y:auto; }
+.sidebar a { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:8px; margin-bottom:2px; color:#94a3b8; text-decoration:none; font-size:14px; cursor:pointer; transition:.15s; }
+.sidebar a:hover { background:#334155; color:#fff; }
+.sidebar a.active { background:#2563eb; color:#fff; font-weight:600; }
+.sidebar .footer { padding:16px 20px; border-top:1px solid #334155; font-size:12px; }
+.main { margin-left:220px; min-height:100vh; padding:20px; }
+.header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+.header h2 { font-size:22px; font-weight:700; color:#1e293b; }
+.header .stats { display:flex; gap:12px; font-size:13px; }
+.header .stats span { padding:6px 12px; background:#fff; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+.page { display:none; }
+.page.active { display:block; }
+
+/* Cards */
+.cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:14px; margin-bottom:20px; }
+.card { background:#fff; border-radius:12px; padding:18px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+.card .label { font-size:12px; color:#64748b; margin-bottom:4px; }
+.card .value { font-size:24px; font-weight:700; color:#1e293b; }
+.card .sub { font-size:12px; color:#94a3b8; margin-top:4px; }
+progress { width:100%; height:6px; border-radius:3px; margin-top:8px; }
+progress::-webkit-progress-bar { background:#e2e8f0; border-radius:3px; }
+progress::-webkit-progress-value { border-radius:3px; }
+table { width:100%; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.08); border-collapse:collapse; }
+th { background:#f8fafc; padding:10px 14px; text-align:left; font-size:12px; color:#64748b; font-weight:600; }
+td { padding:10px 14px; border-top:1px solid #f1f5f9; font-size:13px; }
+tr:hover { background:#f8faff; }
+.badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; }
+.badge-green { background:#dcfce7; color:#166534; }
+.badge-red { background:#fee2e2; color:#991b1b; }
+.badge-gray { background:#f1f5f9; color:#64748b; }
+.btn { padding:4px 10px; border:1px solid #e2e8f0; background:#fff; border-radius:6px; cursor:pointer; font-size:12px; }
+.btn:hover { background:#f8fafc; }
+.btn-primary { background:#2563eb; color:#fff; border-color:#2563eb; }
+.btn-primary:hover { background:#1d4ed8; }
+.btn-sm { padding:2px 6px; font-size:11px; }
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+@media(max-width:768px) { .sidebar { width:60px; } .sidebar a span { display:none; } .sidebar .logo span { display:none; } .main { margin-left:60px; } .cards { grid-template-columns:1fr 1fr; } .grid-2 { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<div class="sidebar" id="sidebar">
+  <div class="logo"><svg width="24" height="24" viewBox="0 0 24 24" fill="#3b82f6"><path d="M4 3h16a1 1 0 011 1v16a1 1 0 01-1 1H4a1 1 0 01-1-1V4a1 1 0 011-1zm1 2v14h14V5H5zm2 2h10v2H7V7zm0 4h10v2H7v-2zm0 4h6v2H7v-2z"/></svg><span>WK Panel</span></div>
+  <nav id="nav">
+    <a class="active" onclick="showPage('dashboard')"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg><span>概览</span></a>
+    <a onclick="showPage('containers')"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9h-7V4h7v7z"/></svg><span>容器</span></a>
+    <a onclick="showPage('apps')"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/></svg><span>应用商店</span></a>
+    <a onclick="showPage('services')"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg><span>服务</span></a>
+    <a onclick="showPage('disks')"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M6 2c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6H6zm6 18c-2.2 0-4-1.8-4-4s1.8-4 4-4 4 1.8 4 4-1.8 4-4 4zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg><span>磁盘</span></a>
+    <a onclick="showPage('files')"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg><span>文件</span></a>
+    <a onclick="showPage('processes')"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M19 8h-1V6c0-2.76-2.24-5-5-5S8 3.24 8 6v2H6c-1.66 0-3 1.34-3 3v8c0 1.66 1.34 3 3 3h12c1.66 0 3-1.34 3-3v-8c0-1.66-1.34-3-3-3zm-6 10c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-10H9.1V6c0-1.61 1.35-2.9 2.9-2.9 1.61 0 2.9 1.29 2.9 2.9v2z"/></svg><span>进程</span></a>
+  </nav>
+  <div class="footer"><span id="footer-status">运行中</span></div>
+</div>
+
+<div class="main" id="main">
+  <div class="header"><h2 id="page-title">概览</h2><div class="stats"><span id="hdr-uptime">-</span><span id="hdr-cpu">CPU: -</span><span id="hdr-mem">MEM: -</span></div></div>
+
+  <div id="page-dashboard" class="page active"><div class="cards" id="stat-cards"></div><div class="grid-2"><div class="bg-white p-6 rounded-xl shadow-sm"><h3 class="font-bold mb-4 text-sm text-slate-600">CPU 实时</h3><div class="h-48 flex items-end gap-1" id="cpu-bars"></div></div><div class="bg-white p-6 rounded-xl shadow-sm"><h3 class="font-bold mb-4 text-sm text-slate-600">系统信息</h3><div id="sys-info"></div></div></div><div class="bg-white rounded-xl shadow-sm mt-6 overflow-hidden"><div class="px-6 py-4 border-b bg-slate-50/50"><h3 class="font-bold text-slate-800">磁盘</h3></div><table><thead><tr><th>挂载点</th><th>已用/总计</th><th>使用率</th></tr></thead><tbody id="disk-table"></tbody></table></div></div>
+
+  <div id="page-containers" class="page"><div class="bg-white p-4 rounded-xl shadow-sm mb-4 flex justify-between items-center"><span id="docker-info">加载中...</span><button class="btn btn-primary" onclick="loadContainers()">刷新</button></div><div class="bg-white rounded-xl shadow-sm overflow-hidden"><table><thead><tr><th>名称</th><th>状态</th><th>镜像</th><th>端口</th><th style="text-align:right">操作</th></tr></thead><tbody id="container-table"></tbody></table></div></div>
+
+  <div id="page-apps" class="page"><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="apps-grid"></div></div>
+
+  <div id="page-services" class="page"><div class="bg-white rounded-xl shadow-sm overflow-hidden"><table><thead><tr><th>服务</th><th>状态</th><th style="text-align:right">操作</th></tr></thead><tbody id="services-table"></tbody></table></div></div>
+
+  <div id="page-disks" class="page"><div class="bg-white rounded-xl shadow-sm overflow-hidden"><table><thead><tr><th>挂载点</th><th>设备</th><th>大小</th><th>已用</th><th>可用</th><th>使用率</th></tr></thead><tbody id="disks-table"></tbody></table></div></div>
+
+  <div id="page-files" class="page"><div class="flex gap-2 mb-4"><button class="btn" onclick="fileGoUp()">⬆ 上级</button><select class="px-3 py-1.5 border rounded-lg text-sm" id="file-jump" onchange="fileJump(this.value)"></select></div><div class="bg-white rounded-xl shadow-sm overflow-hidden"><table><thead><tr><th>名称</th><th>大小</th><th>权限</th></tr></thead><tbody id="files-table"></tbody></table></div></div>
+
+  <div id="page-processes" class="page"><div class="bg-white rounded-xl shadow-sm overflow-hidden"><table><thead><tr><th>用户</th><th>CPU%</th><th>MEM%</th><th>内存</th><th>命令</th></tr></thead><tbody id="processes-table"></tbody></table></div></div>
+</div>
+
+<script>
+var currentPage = 'dashboard', filePath = '/', cpuData = [];
+function $(id){return document.getElementById(id)}
+
+function showPage(name){
+  document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'))
+  document.querySelectorAll('.sidebar a').forEach(e=>e.classList.remove('active'))
+  $(name==='dashboard'?'page-dashboard':name==='containers'?'page-containers':name==='apps'?'page-apps':name==='services'?'page-services':name==='disks'?'page-disks':name==='files'?'page-files':'page-processes').classList.add('active')
+  document.querySelectorAll('#nav a').forEach((a,i)=>{if(a.getAttribute('onclick').includes(name))a.classList.add('active')})
+  currentPage=name; loadPage(name)
+}
+
+function loadPage(n){
+  var titles={dashboard:'概览',containers:'容器',apps:'应用商店',services:'服务',disks:'磁盘',files:'文件',processes:'进程'}
+  $('page-title').textContent=titles[n]||n
+  if(n==='dashboard'){loadDashboard();loadDisksBrief()}
+  else if(n==='containers') loadContainers()
+  else if(n==='apps') loadApps()
+  else if(n==='services') loadServices()
+  else if(n==='disks') loadDisksFull()
+  else if(n==='files') loadFiles('/')
+  else if(n==='processes') loadProcesses()
+}
+
+// --- Dashboard ---
+function loadDashboard(){
+  fetch('/api/system').then(r=>r.json()).then(d=>{
+    $('hdr-uptime').textContent='⏱ '+d.uptime;$('hdr-cpu').textContent='CPU: '+d.cpu.toFixed(1)+'%';$('hdr-mem').textContent='MEM: '+d.memPct.toFixed(1)+'%'
+    $('stat-cards').innerHTML=
+      '<div class=card><div class=label>CPU</div><div class=value>'+d.cpu.toFixed(1)+'%</div><progress value="'+d.cpu+'" max=100></progress></div>'+
+      '<div class=card><div class=label>内存</div><div class=value>'+d.memPct.toFixed(1)+'%</div><progress value="'+d.memPct+'" max=100 style="--progress-bg:#8b5cf6"></progress></div>'+
+      '<div class=card><div class=label>负载</div><div class=value>'+d.load1.toFixed(2)+'</div><div class=sub>'+d.load5.toFixed(2)+' / '+d.load15.toFixed(2)+'</div></div>'+
+      '<div class=card><div class=label>运行</div><div class=value style=font-size:18px>'+d.uptime+'</div><div class=sub>'+d.cpuCores+'核</div></div>'
+    $('sys-info').innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px"><div><div style="color:#94a3b8;font-size:11px">系统</div><div>'+d.os+'</div></div><div><div style="color:#94a3b8;font-size:11px">内核</div><div>'+d.kernel+'</div></div><div><div style="color:#94a3b8;font-size:11px">内存</div><div>'+(d.memUsed/1048576).toFixed(0)+'/'+(d.memTotal/1048576).toFixed(0)+'MB</div></div><div><div style="color:#94a3b8;font-size:11px">Swap</div><div>'+(d.swapUsed/1048576).toFixed(0)+'/'+(d.swapT/1048576).toFixed(0)+'MB</div></div></div>'
+    cpuData.push(d.cpu);if(cpuData.length>30)cpuData.shift()
+    $('cpu-bars').innerHTML=cpuData.map(v=>'<div style="flex:1;background:#e2e8f0;border-radius:3px;position:relative"><div style="position:absolute;bottom:0;width:100%;height:'+v+'%;background:#2563eb;border-radius:3px;transition:height .5s"></div></div>').join('')
+  })
+}
+
+function loadDisksBrief(){
+  fetch('/api/disks').then(r=>r.json()).then(list=>{
+    $('disk-table').innerHTML=list.filter(d=>d.mount==='/'||d.mount.startsWith('/mnt/')).map(d=>{
+      var p=parseInt(d.pct);return '<tr><td class="font-mono text-sm">'+d.mount+'</td><td>'+d.used+'/'+d.size+'</td><td><div class="flex items-center gap-2"><div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden w-24"><div class="h-full '+(p>80?'bg-red-500':p>60?'bg-amber-500':'bg-blue-500')+'" style="width:'+Math.min(p,100)+'%"></div></div><span class="text-xs font-medium">'+d.pct+'</span></div></td></tr>'
+    }).join('')
+  })
+}
+
+// --- Containers ---
+function loadContainers(){
+  fetch('/api/containers').then(r=>r.json()).then(list=>{
+    $('docker-info').textContent='共 '+list.length+' 个容器'
+    $('container-table').innerHTML=list.map(c=>{
+      var run=c.state==='running'
+      return '<tr><td class="font-medium">'+c.name+'</td><td><span class="badge '+(run?'badge-green':'badge-gray')+'">'+(run?'运行中':'已停止')+'</span></td><td style="font-size:12px">'+c.image+'</td><td style="font-size:12px">'+(c.ports||'-')+'</td><td style="text-align:right">'+(run?'<button class="btn btn-sm" onclick="conAction(\''+c.name+'\',\'stop\')">停止</button> ':'<button class="btn btn-sm btn-primary" onclick="conAction(\''+c.name+'\',\'start\')">启动</button> ')+'<button class="btn btn-sm" onclick="conAction(\''+c.name+'\',\'restart\')">重启</button></td></tr>'
+    }).join('')
+  })
+}
+function conAction(n,a){fetch('/api/container/'+n+'/'+a,{method:'POST'}).then(r=>r.json()).then(d=>{if(d.status==='ok')setTimeout(loadContainers,1500)})}
+
+// --- Apps ---
+function loadApps(){
+  fetch('/api/apps').then(r=>r.json()).then(list=>{
+    $('apps-grid').innerHTML=list.map(a=>{
+      var catColors={'下载':'bg-blue-50 text-blue-600','媒体':'bg-purple-50 text-purple-600','工具':'bg-green-50 text-green-600','数据库':'bg-amber-50 text-amber-600','Web':'bg-cyan-50 text-cyan-600','智能':'bg-pink-50 text-pink-600'}
+      var cc=catColors[a.category]||'bg-slate-50 text-slate-600'
+      return '<div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100"><div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-lg '+cc+' flex items-center justify-center text-sm font-bold">'+a.name.slice(0,2)+'</div><div><div class="font-bold text-slate-800">'+a.name+'</div><div class="text-xs text-slate-400">'+a.desc+'</div></div></div><div class="flex gap-2"><span class="text-xs px-2 py-0.5 rounded '+cc+'">'+a.category+'</span><span class="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-500">'+a.port+'</span></div><div class="flex gap-2 mt-3"><button class="btn btn-sm flex-1 btn-primary" onclick="installApp(\''+a.image+'\',\''+a.name+'\',\''+a.port+'\')">安装</button><button class="btn btn-sm flex-1" onclick="window.open(\'http://192.168.1.191:'+a.port+'\',\'_blank\')">打开</button></div></div>'
+    }).join('')
+  })
+}
+function installApp(img,name,port){
+  var fd=new FormData();fd.append('image',img);fd.append('name',name.toLowerCase());fd.append('port',port)
+  fetch('/api/apps/install',{method:'POST',body:fd}).then(r=>r.json()).then(d=>{if(d.status==='ok')alert('安装成功!');else alert('安装失败: '+d.msg)})
+}
+
+// --- Services ---
+function loadServices(){
+  fetch('/api/services').then(r=>r.json()).then(list=>{
+    $('services-table').innerHTML=list.map(s=>{
+      var ok=s.status==='active'
+      return '<tr><td class="font-medium">'+s.name+'</td><td><span class="badge '+(ok?'badge-green':'badge-red')+'">'+s.status+'</span></td><td style="text-align:right">'+(ok?'<button class="btn btn-sm" onclick="svcAction(\''+s.name+'\',\'stop\')">停止</button> ':'<button class="btn btn-sm btn-primary" onclick="svcAction(\''+s.name+'\',\'start\')">启动</button> ')+'<button class="btn btn-sm" onclick="svcAction(\''+s.name+'\',\'restart\')">重启</button></td></tr>'
+    }).join('')
+  })
+}
+function svcAction(n,a){fetch('/api/service/'+n+'/'+a,{method:'POST'}).then(r=>r.json()).then(d=>{if(d.status==='ok')setTimeout(loadServices,1000)})}
+
+// --- Disks ---
+function loadDisksFull(){
+  fetch('/api/disks').then(r=>r.json()).then(list=>{
+    $('disks-table').innerHTML=list.filter(d=>d.mount==='/'||d.mount.startsWith('/mnt/')||d.mount==='/boot').map(d=>{
+      var p=parseInt(d.pct)
+      return '<tr><td class="font-mono">'+d.mount+'</td><td class="text-xs">'+d.device+'</td><td>'+d.size+'</td><td>'+d.used+'</td><td>'+d.avail+'</td><td><div class="flex items-center gap-2"><div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden w-24"><div class="h-full '+(p>80?'bg-red-500':p>60?'bg-amber-500':'bg-blue-500')+'" style="width:'+Math.min(p,100)+'%"></div></div><span class="text-xs font-medium">'+d.pct+'</span></div></td></tr>'
+    }).join('')
+  })
+}
+
+// --- Files ---
+function loadFiles(path){
+  filePath=path||'/'
+  $('file-jump').innerHTML='<option value="">跳转...</option><option value="/">/</option><option value="/mnt/sdb1">/mnt/sdb1 (NAS)</option><option value="/mnt/sdc1">/mnt/sdc1</option><option value="/tmp">/tmp</option>'
+  fetch('/api/files/read?path='+encodeURIComponent(filePath)).then(r=>r.json()).then(list=>{
+    if(list.error){$('files-table').innerHTML='<tr><td colspan="3" class="text-center text-red-500 py-4">'+list.error+'</td></tr>';return}
+    $('files-table').innerHTML=list.map(f=>{
+      var click=f.isDir?'onclick="loadFiles(\''+filePath+'/'+f.name+'\')"':''
+      return '<tr class="hover:bg-slate-50 cursor-pointer" '+click+'><td><div class="flex items-center gap-2"><span>'+(f.isDir?'📁':'📄')+'</span><span>'+f.name+'</span></div></td><td class="text-xs text-slate-500">'+(f.isDir?'-':f.size>1048576?(f.size/1048576).toFixed(1)+'MB':f.size>1024?(f.size/1024).toFixed(1)+'KB':f.size+'B')+'</td><td class="text-xs text-slate-500 font-mono">'+f.mode+'</td></tr>'
+    }).join('')
+  })
+}
+function fileGoUp(){var p=filePath.replace(/\/$/,'').split('/');p.pop();loadFiles(p.join('/')||'/')}
+function fileJump(v){if(v)loadFiles(v)}
+
+// --- Processes ---
+function loadProcesses(){
+  fetch('/api/processes').then(r=>r.json()).then(list=>{
+    $('processes-table').innerHTML=list.map(p=>'<tr><td>'+p.user+'</td><td>'+p.cpu+'</td><td>'+p.mem+'</td><td>'+(parseInt(p.rss)/1024).toFixed(0)+'MB</td><td style="font-size:12px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+p.cmd+'</td></tr>').join('')
+  })
+}
+
+// Auto
+setInterval(function(){
+  if(currentPage==='dashboard'){loadDashboard();loadDisksBrief()}
+  if(currentPage==='containers')loadContainers()
+},4000)
+
+// Init
+loadDashboard();loadDisksBrief()
+</script>
+</body>
+</html>
